@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(ggplot2)
 library(nlme)
+library(dplyr)
 growth <- 
   read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
 growth
@@ -57,8 +58,15 @@ PVCS_densityplot <-
 PVCS_densityplot
 ```
 
-```{r}
+### Analysis
 
+```{r}
+summarize(group_by(growth, TREATMENT), mean(ANN_INC))
+```
+
+
+```{r}
+ggplot(growth) + geom_boxplot(aes(x = TREATMENT, y = ANN_INC, group = COMPGAP))
 ```
 
 
