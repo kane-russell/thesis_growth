@@ -9,4 +9,57 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+library(ggplot2)
+library(nlme)
+growth <- 
+  read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
+growth
+```
+
+
+### Initial Data Visualization
+
+```{r}
+ANNINC_boxplot <- 
+  ggplot(growth) + 
+  geom_boxplot(aes(x = TREATMENT, y = ANN_INC))
+ANNINC_boxplot
+```
+
+```{r}
+RGR_boxplot <- 
+  ggplot(growth) + 
+  geom_boxplot(aes(x = TREATMENT, y = RGR))
+RGR_boxplot
+```
+
+```{r}
+DBH_2013_hist <- 
+  ggplot(growth) + 
+  geom_histogram(aes(x = DBH_2013), binwidth = 1) 
+DBH_2013_hist
+```
+
+```{r}
+DBH_2018_hist <- 
+  ggplot(growth) + 
+  geom_histogram(aes(x = DBH_2018), binwidth = 1)
+DBH_2018_hist
+```
+
+```{r}
+PVCS_densityplot <-
+  ggplot(growth) + 
+  geom_density(aes(x = PVCS_2013)) + 
+  geom_density(aes(x = PVCS_2018), color = "red") + 
+  xlab("PVCS")
+PVCS_densityplot
+```
+
+```{r}
+
+```
+
+
 
