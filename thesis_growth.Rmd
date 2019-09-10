@@ -15,7 +15,7 @@ library(nlme)
 library(dplyr)
 growth <- 
   read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
-growth
+head(growth)
 ```
 
 
