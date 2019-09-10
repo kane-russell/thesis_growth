@@ -61,13 +61,29 @@ PVCS_densityplot
 ### Analysis
 
 ```{r}
-summarize(group_by(growth, TREATMENT), mean(ANN_INC))
+mean_ANN_INC <- summarize(group_by(growth, TREATMENT), mean_RGR = mean(ANN_INC))
+mean_ANN_INC
 ```
 
 
 ```{r}
-ggplot(growth) + geom_boxplot(aes(x = TREATMENT, y = ANN_INC, group = COMPGAP))
+ANN_INC_by_trt <- 
+  ggplot() + 
+  geom_boxplot(data = growth, aes(x = TREATMENT, y = ANN_INC, group = COMPGAP)) + 
+  geom_point(data = mean_ANN_INC, aes(x = TREATMENT, y = mean_RGR), color = "red", shape = 4, size = 4)
+ANN_INC_by_trt
+```
+```{r}
+mean_RGR <- summarize(group_by(growth, TREATMENT), mean_RGR = mean(RGR))
+mean_RGR
 ```
 
 
+```{r}
+RGR_by_trt <- 
+  ggplot() + 
+  geom_boxplot(data = growth, aes(x = TREATMENT, y = RGR, group = COMPGAP)) + 
+  geom_point(data = mean_RGR, aes(x = TREATMENT, y = mean_RGR), color = "red", shape = 4, size = 4)
+RGR_by_trt
+```
 
