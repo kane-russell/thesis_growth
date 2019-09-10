@@ -24,16 +24,24 @@ growth
 ```{r}
 ANNINC_boxplot <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = TREATMENT, y = ANN_INC))
+  geom_boxplot(aes(x = TREATMENT, y = ANN_INC), varwidth = TRUE)
 ANNINC_boxplot
 ```
 
 ```{r}
 RGR_boxplot <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = TREATMENT, y = RGR))
+  geom_boxplot(aes(x = TREATMENT, y = RGR), varwidth = TRUE)
 RGR_boxplot
 ```
+
+```{r}
+BAI_boxplot <- 
+  ggplot(growth) + 
+  geom_boxplot(aes(x = TREATMENT, y = BAI), varwidth = TRUE)
+BAI_boxplot
+```
+
 
 ```{r}
 DBH_2013_hist <- 
@@ -58,7 +66,6 @@ PVCS_densityplot <-
 PVCS_densityplot
 ```
 
-### Analysis
 
 ```{r}
 mean_ANN_INC <- summarize(group_by(growth, TREATMENT), mean_RGR = mean(ANN_INC))
@@ -86,4 +93,45 @@ RGR_by_trt <-
   geom_point(data = mean_RGR, aes(x = TREATMENT, y = mean_RGR), color = "red", shape = 4, size = 4)
 RGR_by_trt
 ```
+
+
+```{r}
+mean_BAI <- summarize(group_by(growth, TREATMENT), mean_BAI = mean(BAI))
+mean_BAI
+BAI_by_trt <- 
+  ggplot() + 
+  geom_boxplot(data = growth, aes(x = TREATMENT, y = BAI, group = COMPGAP)) + 
+  geom_point(data = mean_BAI, aes(x = TREATMENT, y = mean_BAI), color = "red", shape = 4, size = 4)
+BAI_by_trt
+```
+
+
+```{r}
+ANN_INC_spp <- 
+  ggplot(growth) + 
+  geom_boxplot(aes(x = SPECIES, y = ANN_INC))
+ANN_INC_spp
+
+RGR_spp <- 
+  ggplot(growth) + 
+  geom_boxplot(aes(x = SPECIES, y = RGR))
+RGR_spp
+
+BAI_spp <- 
+  ggplot(growth) + 
+  geom_boxplot(aes(x = SPECIES, y = BAI))
+BAI_spp
+```
+
+
+
+### Modeling
+
+```{r}
+fit1 <- lm(ANN_INC ~ TREATMENT + SPECIES, data = growth)
+plot(resid(fit1) ~ growth$TREATMENT)
+plot(resid(fit1) ~ growth$SPECIES)
+drop1(fit1, test = "F")
+```
+
 
