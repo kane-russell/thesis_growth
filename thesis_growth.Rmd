@@ -132,6 +132,12 @@ fit1 <- lm(ANN_INC ~ TREATMENT + SPECIES, data = growth)
 plot(resid(fit1) ~ growth$TREATMENT)
 plot(resid(fit1) ~ growth$SPECIES)
 drop1(fit1, test = "F")
+summary(fit1)
 ```
 
+```{r}
+vf2 <- varIdent(form= ~ 1 | TREATMENT * SPECIES)
+fit_identvar <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth, weights = vf2)
+summary(fit_identvar)
+```
 
