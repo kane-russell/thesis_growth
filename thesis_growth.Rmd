@@ -15,7 +15,15 @@ library(nlme)
 library(dplyr)
 growth <- 
   read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
+growth <- 
+  growth %>% 
+  mutate(RGR_BA = BAI/BA_2013)
 head(growth)
+```
+
+```{r}
+growth_out <- growth[-c(153),] 
+growth_out
 ```
 
 
@@ -103,6 +111,16 @@ BAI_by_trt <-
   geom_boxplot(data = growth, aes(x = TREATMENT, y = BAI, group = COMPGAP)) + 
   geom_point(data = mean_BAI, aes(x = TREATMENT, y = mean_BAI), color = "red", shape = 4, size = 4)
 BAI_by_trt
+```
+
+```{r}
+mean_RGR_BA <- summarize(group_by(growth_out, TREATMENT), mean_RGR_BA = mean(RGR_BA))
+mean_RGR_BA
+RGR_BA_by_trt <- 
+  ggplot() + 
+  geom_boxplot(data = growth_out, aes(x = TREATMENT, y = RGR_BA, group = COMPGAP, color = factor(COMP))) + 
+  geom_point(data = mean_RGR_BA, aes(x = TREATMENT, y = mean_RGR_BA), color = "red", shape = 4, size = 4)
+RGR_BA_by_trt
 ```
 
 
