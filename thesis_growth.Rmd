@@ -76,7 +76,7 @@ mean_ANN_INC
 ```{r}
 ANN_INC_by_trt <- 
   ggplot() + 
-  geom_boxplot(data = growth, aes(x = TREATMENT, y = ANN_INC, group = COMPGAP)) + 
+  geom_boxplot(data = growth, aes(x = TREATMENT, y = ANN_INC, group = COMPGAP, color = factor(COMP))) + 
   geom_point(data = mean_ANN_INC, aes(x = TREATMENT, y = mean_RGR), color = "red", shape = 4, size = 4)
 ANN_INC_by_trt
 ```
@@ -89,7 +89,7 @@ mean_RGR
 ```{r}
 RGR_by_trt <- 
   ggplot() + 
-  geom_boxplot(data = growth, aes(x = TREATMENT, y = RGR, group = COMPGAP)) + 
+  geom_boxplot(data = growth, aes(x = TREATMENT, y = RGR, group = COMPGAP, color = factor(COMP))) + 
   geom_point(data = mean_RGR, aes(x = TREATMENT, y = mean_RGR), color = "red", shape = 4, size = 4)
 RGR_by_trt
 ```
@@ -125,13 +125,13 @@ BAI_spp
 
 
 
+
 ### Modeling
 
 ```{r}
-fit1 <- lm(ANN_INC ~ TREATMENT + SPECIES, data = growth)
+fit1 <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth)
 plot(resid(fit1) ~ growth$TREATMENT)
 plot(resid(fit1) ~ growth$SPECIES)
-drop1(fit1, test = "F")
 summary(fit1)
 ```
 
@@ -139,5 +139,15 @@ summary(fit1)
 vf2 <- varIdent(form= ~ 1 | TREATMENT * SPECIES)
 fit_identvar <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth, weights = vf2)
 summary(fit_identvar)
+```
+
+```{r}
+E2 <- resid(fit_identvar, type = "normalized")
+coplot(E2 ~ TREATMENT | SPECIES, data = growth,
+ylab = "Normalised residuals")
+```
+
+```{r}
+anova(fit1, fit_identvar)
 ```
 
