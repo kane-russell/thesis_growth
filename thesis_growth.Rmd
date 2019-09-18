@@ -9,15 +9,18 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 ```{r}
 library(ggplot2)
 library(nlme)
 library(dplyr)
+library(car)
 growth <- 
   read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
 growth <- 
   growth %>% 
   mutate(RGR_BA = BAI/BA_2013)
+growth$COMP <- factor(growth$COMP)
 head(growth)
 ```
 
@@ -147,25 +150,34 @@ BAI_spp
 ### Modeling
 
 ```{r}
-fit1 <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth)
-plot(resid(fit1) ~ growth$TREATMENT)
-plot(resid(fit1) ~ growth$SPECIES)
-summary(fit1)
+M.lm <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth)
+plot(resid(M.lm) ~ growth$TREATMENT)
+plot(resid(M.lm) ~ growth$SPECIES)
+summary(M.lm)
 ```
 
 ```{r}
 vf2 <- varIdent(form= ~ 1 | TREATMENT * SPECIES)
-fit_identvar <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth, weights = vf2)
-summary(fit_identvar)
+M.identvar <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth, weights = vf2)
+summary(M.identvar)
 ```
 
 ```{r}
-E2 <- resid(fit_identvar, type = "normalized")
+E2 <- resid(M.identvar, type = "normalized")
 coplot(E2 ~ TREATMENT | SPECIES, data = growth,
 ylab = "Normalised residuals")
 ```
 
 ```{r}
-anova(fit1, fit_identvar)
+anova(M.lm, M.identvar)
 ```
+
+```{r}
+M.lm2 <- lm(data = growth, RGR ~ TREATMENT + SPECIES + COMP + TREATMENT:SPECIES)
+summary(M.lm2)
+```
+
+
+
+
 
