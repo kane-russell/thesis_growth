@@ -21,6 +21,8 @@ growth <-
   growth %>% 
   mutate(RGR_BA = BAI/BA_2013)
 growth$COMP <- factor(growth$COMP)
+colnames(growth)[colnames(growth)=="TREATMENT"] <- "TRT"
+colnames(growth)[colnames(growth)=="SPECIES"] <- "SPP"
 head(growth)
 ```
 
@@ -35,21 +37,21 @@ growth_out
 ```{r}
 ANNINC_boxplot <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = TREATMENT, y = ANN_INC), varwidth = TRUE)
+  geom_boxplot(aes(x = TRT, y = ANN_INC), varwidth = TRUE)
 ANNINC_boxplot
 ```
 
 ```{r}
 RGR_boxplot <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = TREATMENT, y = RGR), varwidth = TRUE)
+  geom_boxplot(aes(x = TRT, y = RGR), varwidth = TRUE)
 RGR_boxplot
 ```
 
 ```{r}
 BAI_boxplot <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = TREATMENT, y = BAI), varwidth = TRUE)
+  geom_boxplot(aes(x = TRT, y = BAI), varwidth = TRUE)
 BAI_boxplot
 ```
 
@@ -79,7 +81,7 @@ PVCS_densityplot
 
 
 ```{r}
-mean_ANN_INC <- summarize(group_by(growth, TREATMENT), mean_RGR = mean(ANN_INC))
+mean_ANN_INC <- summarize(group_by(growth, TRT), mean_RGR = mean(ANN_INC))
 mean_ANN_INC
 ```
 
@@ -87,12 +89,12 @@ mean_ANN_INC
 ```{r}
 ANN_INC_by_trt <- 
   ggplot() + 
-  geom_boxplot(data = growth, aes(x = TREATMENT, y = ANN_INC, group = COMPGAP, color = factor(COMP))) + 
-  geom_point(data = mean_ANN_INC, aes(x = TREATMENT, y = mean_RGR), color = "red", shape = 4, size = 4)
+  geom_boxplot(data = growth, aes(x = TRT, y = ANN_INC, group = COMPGAP, color = factor(COMP))) + 
+  geom_point(data = mean_ANN_INC, aes(x = TRT, y = mean_RGR), color = "red", shape = 4, size = 4)
 ANN_INC_by_trt
 ```
 ```{r}
-mean_RGR <- summarize(group_by(growth, TREATMENT), mean_RGR = mean(RGR))
+mean_RGR <- summarize(group_by(growth_out, TRT), mean_RGR = mean(RGR))
 mean_RGR
 ```
 
@@ -100,29 +102,29 @@ mean_RGR
 ```{r}
 RGR_by_trt <- 
   ggplot() + 
-  geom_boxplot(data = growth, aes(x = TREATMENT, y = RGR, group = COMPGAP, color = factor(COMP))) + 
-  geom_point(data = mean_RGR, aes(x = TREATMENT, y = mean_RGR), color = "red", shape = 4, size = 4)
+  geom_boxplot(data = growth_out, aes(x = TRT, y = RGR, group = COMPGAP, color = factor(COMP))) + 
+  geom_point(data = mean_RGR, aes(x = TRT, y = mean_RGR), color = "red", shape = 4, size = 4)
 RGR_by_trt
 ```
 
 
 ```{r}
-mean_BAI <- summarize(group_by(growth, TREATMENT), mean_BAI = mean(BAI))
+mean_BAI <- summarize(group_by(growth, TRT), mean_BAI = mean(BAI))
 mean_BAI
 BAI_by_trt <- 
   ggplot() + 
-  geom_boxplot(data = growth, aes(x = TREATMENT, y = BAI, group = COMPGAP)) + 
-  geom_point(data = mean_BAI, aes(x = TREATMENT, y = mean_BAI), color = "red", shape = 4, size = 4)
+  geom_boxplot(data = growth, aes(x = TRT, y = BAI, group = COMPGAP, color = COMP)) + 
+  geom_point(data = mean_BAI, aes(x = TRT, y = mean_BAI), color = "red", shape = 4, size = 4)
 BAI_by_trt
 ```
 
 ```{r}
-mean_RGR_BA <- summarize(group_by(growth_out, TREATMENT), mean_RGR_BA = mean(RGR_BA))
+mean_RGR_BA <- summarize(group_by(growth_out, TRT), mean_RGR_BA = mean(RGR_BA))
 mean_RGR_BA
 RGR_BA_by_trt <- 
   ggplot() + 
-  geom_boxplot(data = growth_out, aes(x = TREATMENT, y = RGR_BA, group = COMPGAP, color = factor(COMP))) + 
-  geom_point(data = mean_RGR_BA, aes(x = TREATMENT, y = mean_RGR_BA), color = "red", shape = 4, size = 4)
+  geom_boxplot(data = growth_out, aes(x = TRT, y = RGR_BA, group = COMPGAP, color = factor(COMP))) + 
+  geom_point(data = mean_RGR_BA, aes(x = TRT, y = mean_RGR_BA), color = "red", shape = 4, size = 4)
 RGR_BA_by_trt
 ```
 
@@ -130,18 +132,23 @@ RGR_BA_by_trt
 ```{r}
 ANN_INC_spp <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = SPECIES, y = ANN_INC))
+  geom_boxplot(aes(x = SPP, y = ANN_INC))
 ANN_INC_spp
 
 RGR_spp <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = SPECIES, y = RGR))
+  geom_boxplot(aes(x = SPP, y = RGR))
 RGR_spp
 
 BAI_spp <- 
   ggplot(growth) + 
-  geom_boxplot(aes(x = SPECIES, y = BAI))
+  geom_boxplot(aes(x = SPP, y = BAI))
 BAI_spp
+
+RGR_BA_spp <-
+  ggplot(growth_out) + 
+  geom_boxplot(aes(x = SPP, y = RGR_BA))
+RGR_BA_spp
 ```
 
 
@@ -150,21 +157,21 @@ BAI_spp
 ### Modeling
 
 ```{r}
-M.lm <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth)
-plot(resid(M.lm) ~ growth$TREATMENT)
-plot(resid(M.lm) ~ growth$SPECIES)
+M.lm <- gls(ANN_INC ~ TRT + SPP, data = growth)
+plot(resid(M.lm) ~ growth$TRT)
+plot(resid(M.lm) ~ growth$SPP)
 summary(M.lm)
 ```
 
 ```{r}
-vf2 <- varIdent(form= ~ 1 | TREATMENT * SPECIES)
-M.identvar <- gls(ANN_INC ~ TREATMENT + SPECIES, data = growth, weights = vf2)
+vf2 <- varIdent(form= ~ 1 | TRT * SPP)
+M.identvar <- gls(ANN_INC ~ TRT + SPP, data = growth, weights = vf2)
 summary(M.identvar)
 ```
 
 ```{r}
 E2 <- resid(M.identvar, type = "normalized")
-coplot(E2 ~ TREATMENT | SPECIES, data = growth,
+coplot(E2 ~ TRT | SPP, data = growth,
 ylab = "Normalised residuals")
 ```
 
@@ -173,11 +180,19 @@ anova(M.lm, M.identvar)
 ```
 
 ```{r}
-M.lm2 <- lm(data = growth, RGR ~ TREATMENT + SPECIES + COMP + TREATMENT:SPECIES)
+M.lm2 <- lm(data = growth, RGR ~ TRT + SPP + COMP + TRT:SPP)
 summary(M.lm2)
 ```
 
 
+```{r}
+Z <- cbind(growth$TRT, growth$SPP, growth$COMP,
+growth$P_NP, growth$HTCB_2013)
+colnames(Z) <- c("TRT", "SPP", "COMP",
+"P_NP", "HTCB_2013")
+pairs(Z, lower.panel = panel.smooth2,
+upper.panel = panel.cor, diag.panel = panel.hist)
+```
 
 
 
