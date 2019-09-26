@@ -190,9 +190,27 @@ Z <- cbind(growth$TRT, growth$SPP, growth$COMP,
 growth$P_NP, growth$HTCB_2013)
 colnames(Z) <- c("TRT", "SPP", "COMP",
 "P_NP", "HTCB_2013")
-pairs(Z, lower.panel = panel.smooth2,
-upper.panel = panel.cor, diag.panel = panel.hist)
+pairs(Z, lower.panel = panel.smooth)
 ```
 
 
+
+```{r}
+library(stats)
+
+plot.design(ANN_INC ~ TRT + SPP + COMP, data = growth_out)
+with(growth_out, {
+  interaction.plot(x.factor = TRT, trace.factor = SPP, response = ANN_INC, col = SPP, type = "l")
+  interaction.plot(x.factor = SPP, trace.factor = TRT, response = ANN_INC)
+  })
+```
+
+```{r}
+growth_out %>% 
+  group_by(TRT, SPP) %>% 
+  summarize(mean = mean(RGR_BA)) %>% 
+ggplot() + 
+  geom_point(aes(x = TRT, y = mean, group = SPP, col = SPP)) + 
+  geom_line(aes(x = TRT, y = mean, group = SPP, col = SPP))
+```
 
