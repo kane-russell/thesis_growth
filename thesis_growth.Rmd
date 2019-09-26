@@ -43,7 +43,7 @@ ANNINC_boxplot
 
 ```{r}
 RGR_boxplot <- 
-  ggplot(growth) + 
+  ggplot(growth_out) + 
   geom_boxplot(aes(x = TRT, y = RGR), varwidth = TRUE)
 RGR_boxplot
 ```
@@ -198,19 +198,61 @@ pairs(Z, lower.panel = panel.smooth)
 ```{r}
 library(stats)
 
-plot.design(ANN_INC ~ TRT + SPP + COMP, data = growth_out)
+plot.design(RGR_BA ~ TRT + SPP + COMP, data = growth_out)
 with(growth_out, {
-  interaction.plot(x.factor = TRT, trace.factor = SPP, response = ANN_INC, col = SPP, type = "l")
-  interaction.plot(x.factor = SPP, trace.factor = TRT, response = ANN_INC)
+  interaction.plot(x.factor = TRT, trace.factor = SPP, response = RGR_BA, col = SPP, type = "l")
+  interaction.plot(x.factor = SPP, trace.factor = TRT, response = RGR_BA)
   })
 ```
 
 ```{r}
 growth_out %>% 
   group_by(TRT, SPP) %>% 
+  summarize(mean_RGR_BA = mean(RGR_BA)) %>% 
+  ggplot() + 
+    geom_point(aes(x = TRT, y = mean_RGR_BA, group = SPP, col = SPP)) + 
+    geom_line(aes(x = TRT, y = mean_RGR_BA, group = SPP, col = SPP))
+```
+
+```{r}
+growth_out %>% 
+  group_by(SPP, TRT) %>% 
   summarize(mean = mean(RGR_BA)) %>% 
-ggplot() + 
-  geom_point(aes(x = TRT, y = mean, group = SPP, col = SPP)) + 
-  geom_line(aes(x = TRT, y = mean, group = SPP, col = SPP))
+  ggplot() + 
+    geom_point(aes(x = SPP, y = mean, group = TRT, col = TRT)) + 
+    geom_line(aes(x = SPP, y = mean, group = TRT, col = TRT))
+```
+
+```{r}
+growth_out %>% 
+  group_by(SPP, TRT) %>% 
+  summarize(count = n())
+```
+
+```{r}
+fgrow <- 
+  growth_out %>% 
+  filter(SPP %in% c("DF", "IC", "PP", "SP", "WF"))
+fgrow
+fgrow$SPP <- factor(fgrow$SPP)
+fgrow$SPP
+```
+
+```{r}
+plot.design(RGR_BA ~ TRT + SPP + COMP, data = fgrow)
+with(fgrow, {
+  interaction.plot(x.factor = TRT, trace.factor = SPP, response = RGR_BA, col = SPP, type = "l")
+  interaction.plot(x.factor = SPP, trace.factor = TRT, response = RGR_BA, type = "l")
+  })
+```
+
+```{r}
+coplot(RGR_BA ~ TRT | SPP, data = fgrow)
+```
+
+```{r}
+fit.lm <- lm(RGR_BA ~ TRT*SPP, data = fgrow)
+summary(fit.lm)
+vif(fit.lm)
 ```
 
