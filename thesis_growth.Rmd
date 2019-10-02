@@ -15,6 +15,9 @@ library(ggplot2)
 library(nlme)
 library(dplyr)
 library(car)
+```
+
+```{r}
 growth <- 
   read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
 growth <- 
@@ -235,11 +238,10 @@ fgrow <-
   filter(SPP %in% c("DF", "IC", "PP", "SP", "WF"))
 fgrow
 fgrow$SPP <- factor(fgrow$SPP)
-fgrow$SPP
 ```
 
 ```{r}
-plot.design(RGR_BA ~ TRT + SPP + COMP, data = fgrow)
+plot.design(RGR_BA ~ TRT + SPP, data = fgrow)
 with(fgrow, {
   interaction.plot(x.factor = TRT, trace.factor = SPP, response = RGR_BA, col = SPP, type = "l")
   interaction.plot(x.factor = SPP, trace.factor = TRT, response = RGR_BA, type = "l")
@@ -251,8 +253,81 @@ coplot(RGR_BA ~ TRT | SPP, data = fgrow)
 ```
 
 ```{r}
-fit.lm <- lm(RGR_BA ~ TRT*SPP, data = fgrow)
+fit.lm <- gls(RGR_BA ~ TRT + SPP, data = fgrow)
 summary(fit.lm)
 vif(fit.lm)
+```
+
+```{r}
+fit.var <- gls(RGR_BA ~ TRT + SPP, data = fgrow, weights = varIdent(form= ~ 1 | TRT * SPP))
+summary(fit.var)
+vif(fit.var)
+```
+
+```{r}
+anova(fit.lm, fit.var, fit.var.TRT)
+```
+
+
+```{r}
+fit.all <- lm(RGR_BA ~ TRT + SPP + P_NP + HTCB_2013, data = fgrow)
+step(fit.all)
+```
+
+```{r}
+fit.tsh.vart <- gls(RGR_BA ~ TRT + SPP + HTCB_2013, data = fgrow, weights = varIdent(form= ~ 1 | TRT))
+fit.tsh.varts <- gls(RGR_BA ~ TRT + SPP + HTCB_2013, data = fgrow, weights = varIdent(form= ~ 1 | TRT * SPP))
+
+anova(fit.tsh.vart, fit.tsh.varts)
+```
+
+```{r}
+summary(fit.tsh.varts)
+anova(fit.tsh.varts)
+```
+
+```{r}
+plot(fit.tsh.varts)
+std.res <- residuals(fit.tsh.varts, type = "pearson")
+hist(std.res)
+qqnorm(std.res)
+plot(y = std.res, x = fgrow$TRT)
+plot(y = std.res, x = fgrow$SPP)
+plot(y = std.res, x = fgrow$HTCB_2013)
+```
+
+```{r}
+fgrow %>% 
+  group_by(TRT, SPP) %>% 
+  summarize(mean_RGR_BA = mean(RGR_BA)) %>% 
+  ggplot() + 
+    geom_point(aes(x = TRT, y = mean_RGR_BA, group = SPP, col = SPP)) + 
+    geom_line(aes(x = TRT, y = mean_RGR_BA, group = SPP, col = SPP))
+
+fgrow %>% 
+  group_by(SPP, TRT) %>% 
+  summarize(mean_RGR_BA = mean(RGR_BA)) %>% 
+  ggplot() + 
+    geom_point(aes(x = SPP, y = mean_RGR_BA, group = TRT, col = TRT)) + 
+    geom_line(aes(x = SPP, y = mean_RGR_BA, group = TRT, col = TRT))
+```
+
+```{r}
+fgrow %>% 
+  ggplot() + 
+    geom_boxplot(aes(x = SPP, y = HTCB_2013))
+```
+
+```{r}
+fgrow %>% 
+  filter(SPP == "DF" & HTCB_2013 > 15)
+```
+
+```{r}
+fgrow %>% 
+  group_by(TRT, SPP) %>% 
+  count() %>% 
+  ggplot() + 
+    geom_col(aes(x = TRT, y = n, group = SPP, fill = SPP))
 ```
 
