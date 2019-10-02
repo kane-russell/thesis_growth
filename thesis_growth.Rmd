@@ -59,32 +59,15 @@ BAI_boxplot
 ```
 
 
-```{r}
-DBH_2013_hist <- 
-  ggplot(growth) + 
-  geom_histogram(aes(x = DBH_2013), binwidth = 1) 
-DBH_2013_hist
-```
 
-```{r}
-DBH_2018_hist <- 
-  ggplot(growth) + 
-  geom_histogram(aes(x = DBH_2018), binwidth = 1)
-DBH_2018_hist
-```
 
-```{r}
-PVCS_densityplot <-
-  ggplot(growth) + 
-  geom_density(aes(x = PVCS_2013)) + 
-  geom_density(aes(x = PVCS_2018), color = "red") + 
-  xlab("PVCS")
-PVCS_densityplot
-```
+
+
+
 
 
 ```{r}
-mean_ANN_INC <- summarize(group_by(growth, TRT), mean_RGR = mean(ANN_INC))
+mean_ANN_INC <- summarize(group_by(growth, TRT), mean_ANN_INC = mean(ANN_INC))
 mean_ANN_INC
 ```
 
@@ -92,8 +75,8 @@ mean_ANN_INC
 ```{r}
 ANN_INC_by_trt <- 
   ggplot() + 
-  geom_boxplot(data = growth, aes(x = TRT, y = ANN_INC, group = COMPGAP, color = factor(COMP))) + 
-  geom_point(data = mean_ANN_INC, aes(x = TRT, y = mean_RGR), color = "red", shape = 4, size = 4)
+  geom_boxplot(data = growth, aes(x = TRT, y = ANN_INC, group = COMPGAP, color = COMP)) + 
+  geom_point(data = mean_ANN_INC, aes(x = TRT, y = mean_ANN_INC), color = "red", shape = 4, size = 4)
 ANN_INC_by_trt
 ```
 ```{r}
@@ -228,14 +211,15 @@ growth_out %>%
 
 ```{r}
 growth_out %>% 
-  group_by(SPP, TRT) %>% 
+  group_by(TRT, SPP) %>% 
   summarize(count = n())
 ```
 
 ```{r}
 fgrow <- 
   growth_out %>% 
-  filter(SPP %in% c("DF", "IC", "PP", "SP", "WF"))
+  filter(SPP %in% c("DF", "IC", "PP", "SP", "WF")) %>% 
+  mutate(LCR_2018 = (HEIGHT_2018 - HTCB_2018)/HEIGHT_2018)
 fgrow
 fgrow$SPP <- factor(fgrow$SPP)
 ```
@@ -259,14 +243,11 @@ vif(fit.lm)
 ```
 
 ```{r}
-fit.var <- gls(RGR_BA ~ TRT + SPP, data = fgrow, weights = varIdent(form= ~ 1 | TRT * SPP))
-summary(fit.var)
-vif(fit.var)
+fit.ts.varts <- gls(RGR_BA ~ TRT + SPP, data = fgrow, weights = varIdent(form= ~ 1 | TRT * SPP))
+summary(fit.ts.varts)
+vif(fit.ts.varts)
 ```
 
-```{r}
-anova(fit.lm, fit.var, fit.var.TRT)
-```
 
 
 ```{r}
@@ -278,7 +259,7 @@ step(fit.all)
 fit.tsh.vart <- gls(RGR_BA ~ TRT + SPP + HTCB_2013, data = fgrow, weights = varIdent(form= ~ 1 | TRT))
 fit.tsh.varts <- gls(RGR_BA ~ TRT + SPP + HTCB_2013, data = fgrow, weights = varIdent(form= ~ 1 | TRT * SPP))
 
-anova(fit.tsh.vart, fit.tsh.varts)
+anova(fit.lm, fit.ts.varts, fit.tsh.vart, fit.tsh.varts)
 ```
 
 ```{r}
@@ -324,10 +305,29 @@ fgrow %>%
 ```
 
 ```{r}
-fgrow %>% 
+sample_size <- 
+  fgrow %>% 
   group_by(TRT, SPP) %>% 
-  count() %>% 
-  ggplot() + 
+  count()
+sample_size
+  ggplot(sample_size) + 
     geom_col(aes(x = TRT, y = n, group = SPP, fill = SPP))
+```
+
+
+```{r}
+ggplot(fgrow) + 
+  geom_boxplot(aes(x = TRT, y = RGR_BA))
+```
+
+```{r}
+ggplot(fgrow) + 
+  geom_point(aes(x = HTCB_2013, y = RGR_BA))
+```
+
+```{r}
+fit.tsc <- lm(RGR_BA ~ TRT + SPP + COMP + TRT:SPP, data = fgrow)
+summary(fit.tsc)
+anova(fit.tsc)
 ```
 
