@@ -331,3 +331,35 @@ summary(fit.tsc)
 anova(fit.tsc)
 ```
 
+```{r}
+fit.txs.varts <- gls(RGR_BA ~ TRT + SPP + TRT:SPP, data = fgrow, weights = varIdent(form= ~ 1 | TRT * SPP))
+summary(fit.txs.varts)
+anova(fit.txs.varts)
+vif(fit.txs.varts)
+```
+
+```{r}
+ggplot(fgrow) + 
+  geom_point(aes(x = RGR_BA, y = TRT, col = SPP))
+
+dotchart(x = fgrow$RGR_BA, groups = fgrow$TRT)
+```
+
+```{r}
+sorted <- fgrow %>% 
+  select(TRT, SPP, RGR_BA) %>% 
+  arrange(TRT, SPP, RGR_BA)
+dotchart(sorted$RGR_BA, groups = sorted$TRT, color = sorted$SPP, cex = 0.7)
+
+sorted2 <- fgrow %>% 
+  arrange(TRT, RGR_BA)
+dotchart(sorted2$RGR_BA, groups = sorted$TRT, color = sorted$TRT, cex = 0.7)
+
+fgrow %>% 
+  group_by(TRT) %>% 
+  summarize(mean = mean(RGR_BA)) %>% 
+ggplot() + 
+  geom_boxplot(data = fgrow, aes(x = TRT, y = RGR_BA, color = SPP)) + 
+  geom_point(aes(x = TRT, y = mean), color = "red", shape = 4, size = 4)
+```
+
