@@ -15,6 +15,7 @@ library(ggplot2)
 library(nlme)
 library(dplyr)
 library(car)
+library(plotly)
 ```
 
 ```{r}
@@ -326,6 +327,9 @@ ggplot(fgrow) +
 ```
 
 ```{r}
+contrasts(fgrow$SPP) <- contr.sum(levels(fgrow$SPP))
+contrasts(fgrow$COMP) <- contr.sum(levels(fgrow$COMP))
+contrasts(fgrow$TRT) <- contr.treatment(levels(fgrow$TRT), base = 2)
 fit.tsc <- lm(RGR_BA ~ TRT + SPP + COMP + TRT:SPP, data = fgrow)
 summary(fit.tsc)
 anova(fit.tsc)
@@ -361,5 +365,37 @@ fgrow %>%
 ggplot() + 
   geom_boxplot(data = fgrow, aes(x = TRT, y = RGR_BA, color = SPP)) + 
   geom_point(aes(x = TRT, y = mean), color = "red", shape = 4, size = 4)
+```
+
+
+
+```{r}
+plot_ly(data = fgrow, x = ~TRT, y = ~SPP, z = ~RGR_BA, type = "scatter3d", color = ~COMP)
+```
+
+```{r}
+fgrow %>% 
+  filter(TRT == "M") %>% 
+  group_by(COMP, SPP) %>% 
+  count()
+
+fgrow %>% 
+  filter(TRT == "BB") %>% 
+  group_by(COMP, SPP) %>% 
+  count()
+
+fgrow %>% 
+  filter(TRT == "MBB") %>% 
+  group_by(COMP, SPP) %>% 
+  count()
+
+fgrow %>% 
+  filter(TRT == "MH") %>% 
+  group_by(COMP, SPP) %>% 
+  count()
+```
+
+```{r}
+plot_ly(data = fgrow, x = ~TRT, y = ~SPP, z = ~COMP, type = "scatter3d")
 ```
 
