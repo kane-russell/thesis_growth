@@ -327,9 +327,9 @@ ggplot(fgrow) +
 ```
 
 ```{r}
-contrasts(fgrow$SPP) <- contr.sum(levels(fgrow$SPP))
-contrasts(fgrow$COMP) <- contr.sum(levels(fgrow$COMP))
-contrasts(fgrow$TRT) <- contr.treatment(levels(fgrow$TRT), base = 2)
+#contrasts(fgrow$SPP) <- contr.sum(levels(fgrow$SPP))
+#contrasts(fgrow$COMP) <- contr.sum(levels(fgrow$COMP))
+#contrasts(fgrow$TRT) <- contr.treatment(levels(fgrow$TRT), base = 2)
 fit.tsc <- lm(RGR_BA ~ TRT + SPP + COMP + TRT:SPP, data = fgrow)
 summary(fit.tsc)
 anova(fit.tsc)
@@ -398,4 +398,41 @@ fgrow %>%
 ```{r}
 plot_ly(data = fgrow, x = ~TRT, y = ~SPP, z = ~COMP, type = "scatter3d")
 ```
+
+```{r}
+grow_RBA_ac <- 
+  read.csv("grow_RBA_ac.csv") %>% 
+  select(-X, -X.1, -X.2)
+grow_RBA_ac
+```
+
+```{r}
+grow_RBA_ac %>% 
+  group_by(TRT) %>% 
+  summarize(avg = mean(RBA_AC))
+
+grow_RBA_ac %>% 
+  ggplot() + 
+  geom_boxplot(aes(x = TRT, y = RBA_AC))
+```
+
+```{r}
+fgrow %>% 
+  ggplot() + 
+  geom_boxplot(aes(x = TRT, y = RGR_BA)) + 
+  labs(x = 'Treatment', 
+       y = 'Relative basal area growth rate')
+```
+
+```{r}
+fit.txs.varts <- gls(RGR_BA ~ TRT + SPP + TRT:SPP, data = fgrow, weights = varIdent(form= ~ 1 | TRT * SPP))
+summary(fit.txs.varts)
+anova(fit.txs.varts)
+```
+
+
+```{r}
+summary(lm(RGR_BA ~ TRT + SPP + COMP + TRT:SPP, data = fgrow))
+```
+
 
