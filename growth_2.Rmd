@@ -1,0 +1,70 @@
+---
+title: "growth_2"
+author: "Kane Russell"
+date: "12/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+#install.packages("ggpubr")
+library(ggpubr)
+```
+
+```{r}
+grow_RBA_ac <- 
+  read.csv("grow_RBA_ac.csv") %>% 
+  select(-X, -X.1, -X.2, -X.3) %>% 
+  mutate(COMPGAP = paste0(COMP, GAP)) %>% 
+  mutate(RGR_2 = (BA_18_AC - BA_13_AC)/(BA_13_AC*5)) %>% 
+  arrange(factor(TRT, levels = c("M", "MH", "MBB", "BB")))
+grow_RBA_ac
+```
+
+```{r}
+grow_RBA_ac %>% 
+  group_by(TRT) %>% 
+  summarise(mean = mean(RGR_BA_AC))
+```
+
+```{r}
+RBA_aov <- aov(RGR_BA_AC ~ TRT, data = grow_RBA_ac)
+summary(RBA_aov)
+```
+
+```{r}
+Tuk_RBA <- TukeyHSD(RBA_aov)
+Tuk_RBA
+plot(Tuk_RBA)
+```
+
+```{r}
+ggplot() + 
+  geom_boxplot(data = grow_RBA_ac, 
+               aes(x = factor(TRT, levels = c("M", "MH", "MBB", "BB")), 
+                   y = RGR_BA_AC)) + 
+  geom_bracket(aes(xmin = "MH", xmax = "BB", y.position = 0.26, label = "p < 0.05")) +
+  #geom_segment(aes(x = "MH", y = 0.26, xend = "BB", yend = 0.26)) + 
+  #geom_segment(aes(x = "MH", xend = "MH", y = 0.255, yend = 0.2603)) + 
+  #geom_segment(aes(x = "BB", xend = "BB", y = 0.255, yend = 0.2603)) + 
+  #geom_text(aes(x = "MBB", y = 0.27, label = "p < 0.05"), size = 3.2) + 
+  labs(x = "Treatment", 
+       y = "Mean relative growth rate of basal area (1/year)")
+```
+
+```{r}
+tky <- as.data.frame(Tuk_RBA$TRT)
+tky$pair <- rownames(tky)
+  ggplot(tky, aes(colour=cut(`p adj`, c(0, 0.01, 0.05, 1), 
+                           label=c("p<0.01","p<0.05","Non-Sig")))) +
+  geom_hline(yintercept=0, lty="11", colour="grey30") +
+  geom_errorbar(aes(pair, ymin=lwr, ymax=upr), width=0.2) +
+  geom_point(aes(pair, diff)) +
+  labs(colour="")
+  
+```
+
