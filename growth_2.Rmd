@@ -15,13 +15,20 @@ library(tidyverse)
 library(ggpubr)
 ```
 
+## Data
+
 ```{r}
+treatments <- data.frame(TRT = c("M", "MH", "MBB", "BB"), 
+                         Treatment = c("Mastication Only", "Mastication + Herbicide", "Mastication + Burn", "Burn Only" ))
+treatments
+
 grow_RBA_ac <- 
   read.csv("grow_RBA_ac.csv") %>% 
   select(-X, -X.1, -X.2, -X.3) %>% 
   mutate(COMPGAP = paste0(COMP, GAP)) %>% 
   mutate(RGR_2 = (BA_18_AC - BA_13_AC)/(BA_13_AC*5)) %>% 
-  arrange(factor(TRT, levels = c("M", "MH", "MBB", "BB")))
+  arrange(factor(TRT, levels = c("M", "MH", "MBB", "BB"))) %>% 
+  left_join(treatments)
 grow_RBA_ac
 ```
 
@@ -31,10 +38,16 @@ grow_RBA_ac %>%
   summarise(mean = mean(RGR_BA_AC))
 ```
 
+## ANOVA
+
 ```{r}
 RBA_aov <- aov(RGR_BA_AC ~ TRT, data = grow_RBA_ac)
-summary(RBA_aov)
+sum_RBA_aov <- summary(RBA_aov)
+str(sum_RBA_aov)
+sum_RBA_aov[[1]][["Pr(>F)"]][[1]]
 ```
+
+## Tukey's HSD
 
 ```{r}
 Tuk_RBA <- TukeyHSD(RBA_aov)
@@ -42,16 +55,16 @@ Tuk_RBA
 plot(Tuk_RBA)
 ```
 
+## Plotting
+
 ```{r}
-ggplot() + 
+ ggplot() + 
   geom_boxplot(data = grow_RBA_ac, 
-               aes(x = factor(TRT, levels = c("M", "MH", "MBB", "BB")), 
+               aes(x = factor(Treatment, c("Mastication Only", "Mastication + Herbicide", "Mastication + Burn", "Burn Only")), 
                    y = RGR_BA_AC)) + 
-  geom_bracket(aes(xmin = "MH", xmax = "BB", y.position = 0.26, label = "p < 0.05")) +
-  #geom_segment(aes(x = "MH", y = 0.26, xend = "BB", yend = 0.26)) + 
-  #geom_segment(aes(x = "MH", xend = "MH", y = 0.255, yend = 0.2603)) + 
-  #geom_segment(aes(x = "BB", xend = "BB", y = 0.255, yend = 0.2603)) + 
-  #geom_text(aes(x = "MBB", y = 0.27, label = "p < 0.05"), size = 3.2) + 
+  geom_bracket(xmin = "Mastication + Herbicide", xmax = "Burn Only", y.position = 0.26, 
+                   label = "Tukey's HSD, p < 0.05") + 
+  geom_label(aes(x = "Mastication Only", y = 0.25, label = "1-way ANOVA, \np < 0.05")) + 
   labs(x = "Treatment", 
        y = "Mean relative growth rate of basal area (1/year)")
 ```
@@ -66,5 +79,56 @@ tky$pair <- rownames(tky)
   geom_point(aes(pair, diff)) +
   labs(colour="")
   
+```
+
+
+Chi-Squares Analysis
+
+```{r}
+growth <- 
+  read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
+colnames(growth)[colnames(growth)=="TREATMENT"] <- "TRT"
+colnames(growth)[colnames(growth)=="SPECIES"] <- "SPP"
+growth_out <- growth[-c(153),]
+fgrow <- 
+  growth_out %>% 
+  filter(SPP %in% c("DF", "IC", "PP", "SP", "WF"))
+
+totals <- 
+  fgrow %>% 
+  group_by(COMPGAP) %>% 
+  summarise(total = n())
+spp_comp <- 
+  fgrow %>% 
+  group_by(COMPGAP, SPP) %>% 
+  left_join(totals) %>%
+  summarise(prop = n()/mean(total), 
+            count = n())
+spp_comp
+```
+
+```{r}
+sppcomp_mtx <- 
+  read_csv("spp_comp.csv") %>%
+  select(-X1, -X7, -X8, -X9, -X10, -X11, -X12, -X13, -X14) %>%
+  filter(!is.na(DF)) %>% 
+  data.matrix()
+rownames(sppcomp_mtx) <- c("10O", "10Q", "30A", "30B", "50D", "50E", "60F", "60G", "60H", "60I", "60J", "400F", "400G", "400H")
+sppcomp_mtx
+
+```
+
+
+```{r}
+#install.packages("corrplot")
+library(corrplot)
+chisq <- chisq.test(sppcomp_mtx)
+chisq
+```
+
+```{r}
+contrib <- 100*chisq$residuals^2/chisq$statistic
+round(contrib, 3)
+corrplot(contrib, is.cor = FALSE)
 ```
 
