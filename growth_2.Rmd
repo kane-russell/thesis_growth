@@ -94,17 +94,8 @@ fgrow <-
   growth_out %>% 
   filter(SPP %in% c("DF", "IC", "PP", "SP", "WF"))
 
-totals <- 
-  fgrow %>% 
-  group_by(COMPGAP) %>% 
-  summarise(total = n())
-spp_comp <- 
-  fgrow %>% 
-  group_by(COMPGAP, SPP) %>% 
-  left_join(totals) %>%
-  summarise(prop = n()/mean(total), 
-            count = n())
-spp_comp
+table(growth_out$COMPGAP, growth_out$SPP) %>% 
+chisq.test()
 ```
 
 ```{r}
@@ -122,7 +113,7 @@ sppcomp_mtx
 ```{r}
 #install.packages("corrplot")
 library(corrplot)
-chisq <- chisq.test(sppcomp_mtx)
+chisq <- chisq.test(sppcomp_mtx, p = c(0.2, 0.2, 0.2, 0.2, 0.2))
 chisq
 ```
 
@@ -130,5 +121,26 @@ chisq
 contrib <- 100*chisq$residuals^2/chisq$statistic
 round(contrib, 3)
 corrplot(contrib, is.cor = FALSE)
+```
+
+
+
+```{r}
+spp_comp_trt <- 
+  spp_comp %>% 
+  group_by(TRT, SPP) %>% 
+  summarise(avg = median(count))
+
+sppcomp_trt_mtx <- matrix(data = spp_comp_trt$avg, 
+       nrow = 4, 
+       ncol = 5, 
+       byrow = TRUE, 
+       dimnames = list(c("BB", "M", "MBB", "MH"), c("DF", "IC", "PP", "SP", "WF")))
+sppcomp_trt_mtx
+```
+
+```{r}
+chisq.test(sppcomp_trt_mtx)
+fisher.test(sppcomp_trt_mtx)
 ```
 
