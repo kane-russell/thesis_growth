@@ -2,7 +2,7 @@
 title: "growth_2"
 author: "Kane Russell"
 date: "12/9/2019"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -33,48 +33,39 @@ grow_RBA_ac
 ```
 
 ```{r}
-grow_RBA_ac %>% 
-  group_by(TRT) %>% 
-  summarise(mean = mean(RGR_BA_AC))
+RBAI_gap <- 
+  grow_RBA_ac %>% 
+  group_by(TRT, Treatment, COMPGAP) %>% 
+  summarise(RBAI = mean(RGR_2))
+RBAI_gap
 ```
 
 ## ANOVA
 
 ```{r}
-RBA_aov <- aov(RGR_BA_AC ~ TRT, data = grow_RBA_ac)
-sum_RBA_aov <- summary(RBA_aov)
-sum_RBA_aov
-```
-
-```{r}
-RBA2_aov <- aov(RGR_2 ~ TRT, data = grow_RBA_ac)
-sum_RBA2_aov <- summary(RBA_aov)
-sum_RBA2_aov
+RBAI_aov <- aov(RBAI ~ TRT, data = RBAI_gap)
+sum_RBAI_aov <- summary(RBA_aov)
+sum_RBAI_aov
 ```
 
 
 ## Tukey's HSD
 
 ```{r}
-Tuk_RBA <- TukeyHSD(RBA_aov)
-Tuk_RBA
-plot(Tuk_RBA)
+Tuk_RBAI <- TukeyHSD(RBAI_aov)
+Tuk_RBAI
+plot(Tuk_RBAI)
 ```
 
-```{r}
-Tuk_RBA2 <- TukeyHSD(RBA2_aov)
-Tuk_RBA2
-plot(Tuk_RBA2)
-```
 
 
 ## Plotting
 
 ```{r}
  ggplot() + 
-  geom_boxplot(data = grow_RBA_ac, 
+  geom_boxplot(data = RBAI_gap, 
                aes(x = factor(Treatment, c("Mastication + Herbicide", "Mastication Only",  "Mastication + Burn", "Burn Only")), 
-                   y = RGR_2)) + 
+                   y = RBAI)) + 
   #geom_bracket(xmin = "Mastication + Herbicide", xmax = "Mastication + Burn", 
   #             y.position = 0.26, label = "") +
   #geom_bracket(x = "Mastication + Herbicide", xmax = "Mastication Only", 
@@ -88,10 +79,10 @@ plot(Tuk_RBA2)
   geom_segment(aes(x = "Mastication + Herbicide", xend = "Mastication + Burn", 
                    y = 0.48, yend = 0.48)) + 
   geom_segment(aes(x = "Mastication Only", xend = "Burn Only", 
-                   y = 0.46, yend = 0.46)) + 
+                   y = 0.465, yend = 0.465)) + 
   labs(x = "Treatment", 
        y = "Relative basal area increment (%/year)", 
-       caption = "Note: Horizontal lines indicate treatments that are not significantly different, using Tukey's HSD")
+       caption = "Note: Horizontal lines indicate treatments that are not significantly different using Tukey's HSD")
 ```
 
 ```{r}
@@ -138,15 +129,34 @@ corrplot(contrib, is.cor = FALSE)
 ```
 
 
-
 ```{r}
-spp_comp_trt <- 
-  table(fgrow$TRT, fgrow$SPP)[, -c(1, 3, 7)]
-spp_comp_trt
+GS_comp <- 
+  as.data.frame(spp_comp[, 3]) %>% 
+  rename('GS' = 'spp_comp[, 3]') %>% 
+  mutate(COMPGAP = rownames(spp_comp), 
+         PRESENCE = GS>0) %>% 
+  left_join(RBAI_gap) %>% 
+  select(TRT, COMPGAP, PRESENCE, RBAI)
+GS_comp
 ```
 
 ```{r}
-chisq.test(spp_comp_trt)
-fisher.test(spp_comp_trt)
+AOV2_fit <- lm(RBAI ~ PRESENCE*TRT, data = GS_comp)
+summary(AOV2_fit)
+```
+
+
+```{r}
+pd <- position_dodge(0.4)
+GS_comp %>% 
+  group_by(TRT, PRESENCE) %>% 
+  summarise(mean = mean(RBAI)) %>% 
+  ggplot() + 
+  geom_point(aes(x = factor(TRT, levels = c("MH", "M", "MBB", "BB")), 
+                 y = mean, 
+                 color = PRESENCE), 
+             position = pd, 
+             shape = 15, 
+             size = 3)
 ```
 
