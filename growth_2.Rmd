@@ -22,21 +22,13 @@ treatments <- data.frame(TRT = c("M", "MH", "MBB", "BB"),
                          Treatment = c("Mastication Only", "Mastication + Herbicide", "Mastication + Burn", "Burn Only" ))
 treatments
 
-grow_RBA_ac <- 
-  read.csv("grow_RBA_ac.csv") %>% 
-  select(-X, -X.1, -X.2, -X.3) %>% 
-  mutate(COMPGAP = paste0(COMP, GAP)) %>% 
-  mutate(RGR_2 = (BA_18_AC - BA_13_AC)/(BA_13_AC*5)) %>% 
-  arrange(factor(TRT, levels = c("M", "MH", "MBB", "BB"))) %>% 
-  left_join(treatments)
-grow_RBA_ac
-```
-
-```{r}
 RBAI_gap <- 
-  grow_RBA_ac %>% 
-  group_by(TRT, Treatment, COMPGAP) %>% 
-  summarise(RBAI = mean(RGR_2))
+  read.csv("grow_RBA_ac.csv") %>% 
+  mutate(COMPGAP = paste0(COMP, GAP)) %>% 
+  mutate(RBAI = (BA_18_AC - BA_13_AC)/(BA_13_AC*5)) %>% 
+  arrange(factor(TRT, levels = c("M", "MH", "MBB", "BB"))) %>% 
+  left_join(treatments) %>% 
+  select(TRT, Treatment, COMPGAP, RBAI)
 RBAI_gap
 ```
 
@@ -82,7 +74,11 @@ plot(Tuk_RBAI)
                    y = 0.465, yend = 0.465)) + 
   labs(x = "Treatment", 
        y = "Relative basal area increment (%/year)", 
-       caption = "Note: Horizontal lines indicate treatments that are not significantly different using Tukey's HSD")
+       caption = "Note: Horizontal lines indicate treatments that are not significantly different using Tukey's HSD", 
+       title = "Growth response by treatment") #+ 
+  #geom_text(aes(x = c("Mastication + Herbicide", "Mastication Only",  "Mastication + Burn", "Burn Only"), 
+  #              y = c(0.47, 0.335, 0.26, 0.195), 
+  #              label = c("a", "a  b", "a  b", "b")))
 ```
 
 ```{r}
@@ -141,7 +137,7 @@ GS_comp
 ```
 
 ```{r}
-AOV2_fit <- lm(RBAI ~ PRESENCE*TRT, data = GS_comp)
+AOV2_fit <- aov(RBAI ~ PRESENCE*TRT, data = GS_comp)
 summary(AOV2_fit)
 ```
 
