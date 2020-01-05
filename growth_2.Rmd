@@ -44,7 +44,7 @@ BAI_gap
 ## ANOVA
 
 ```{r}
-BAI_aov <- aov(BAI ~ TRT, data = BAI_gap)
+BAI_aov <- aov(BAI ~ TRT*COMP, data = BAI_gap)
 sum_BAI_aov <- summary(BAI_aov)
 sum_BAI_aov
 ```
@@ -77,14 +77,14 @@ RBAI_gap <-
   growth_out %>% 
   left_join(treatments) %>% 
   mutate(RBAI = (BA_2018 - BA_2013)/(5*BA_2013)) %>% 
-  group_by(TRT, Treatment, COMPGAP) %>% 
+  group_by(TRT, Treatment, COMPGAP, COMP) %>% 
   summarise(avg_RBAI = mean(RBAI))
 
 RBAI_gap
 ```
 
 ```{r}
-RBAI_aov <- aov(avg_RBAI ~ TRT, data = RBAI_gap)
+RBAI_aov <- aov(avg_RBAI ~ TRT*COMP, data = RBAI_gap)
 sum_RBAI_aov <- summary(RBAI_aov)
 sum_RBAI_aov
 ```
