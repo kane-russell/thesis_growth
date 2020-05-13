@@ -1,0 +1,208 @@
+---
+title: "cleaned_up"
+author: "Kane Russell"
+date: "4/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ANOVAreplication)
+library(car)
+```
+
+
+```{r}
+cleaned_trees <- 
+  read.csv("TAYSR_CompiledGrowthData_2013_2018.csv") %>% 
+  filter(SPECIES %in% c("DF", "IC", "PP", "SP", "WF", "GS"))
+colnames(cleaned_trees)[colnames(cleaned_trees)=="TREATMENT"] <- "TRT"
+colnames(cleaned_trees)[colnames(cleaned_trees)=="SPECIES"] <- "SPP"
+
+cleaned_trees
+
+
+treatments <- data.frame(TRT = c("M", "MH", "MBB", "BB"), 
+                         Treatment = c("Mastication Only", "Mastication + Herbicide", "Mastication + Burn", "Burn Only" ))
+
+TBAI_tbl <- cleaned_trees %>% 
+  mutate(RBAI = (BA_2018 - BA_2013)/(5*BA_2013)*100) %>%
+  group_by(COMPGAP, TRT) %>% 
+  summarise(TBAI = mean(RBAI)) %>% 
+  left_join(treatments)
+  
+TBAI_tbl
+
+plot_size <- read_csv("plot_size.csv")
+
+SBAI_tbl <- cleaned_trees %>% 
+  left_join(plot_size) %>% 
+  group_by(COMPGAP, TRT) %>% 
+  summarise(BA2018 = sum(BA_2018)/mean(acres),
+            BA2013 = sum(BA_2013)/mean(acres)) %>% 
+  mutate(SBAI_imp = (BA2018 - BA2013)/5, 
+         SBAI = SBAI_imp/4.356) %>% 
+  select(COMPGAP, TRT, SBAI_imp, SBAI) %>% 
+  left_join(treatments)
+SBAI_tbl
+```
+
+```{r}
+std.error <- function(x) {
+  sd(x)/sqrt(length(x))
+}
+```
+
+```{r}
+SBAI_means <- 
+  SBAI_tbl %>% 
+  group_by(TRT) %>%
+  summarise(mean = mean(SBAI),
+            se = std.error(SBAI)) %>% 
+  mutate(cv = se/mean) %>% 
+  left_join(treatments)
+SBAI_means
+
+TBAI_means <- 
+  TBAI_tbl %>% 
+  group_by(TRT) %>%
+  summarise(mean = mean(TBAI),
+            se = std.error(TBAI)) %>% 
+  mutate(cv = se/mean) %>% 
+  left_join(treatments)
+TBAI_means
+```
+
+```{r}
+TBAI_lm <- lm(TBAI ~ TRT, data = TBAI_tbl)
+SBAI_lm <- lm(SBAI ~ TRT, data = SBAI_tbl)
+
+plot(TBAI_lm)
+plot(SBAI_lm)
+```
+
+```{r}
+car::leveneTest(TBAI ~ TRT, data = TBAI_tbl)
+
+car::leveneTest(SBAI ~ TRT, data = SBAI_tbl)
+
+shapiro.test(residuals(TBAI_lm))
+
+shapiro.test(residuals(SBAI_lm))
+```
+
+```{r}
+SBAI_aov <- aov(SBAI ~ TRT, data = SBAI_tbl)
+summary(SBAI_aov)
+```
+
+```{r}
+ggplot() + 
+  geom_boxplot(data = SBAI_tbl, 
+               aes(x = factor(Treatment, c("Burn Only", "Mastication + Burn",  "Mastication + Herbicide", "Mastication Only")), 
+                   y = SBAI)) + 
+  geom_point(data = SBAI_means, 
+             aes(x = Treatment, y = mean), color = 'red') + 
+  labs(x = "Treatment", 
+       y = expression(SBAI~(m^{2}~ha^{-1}~yr^{-1})))
+```
+
+
+```{r}
+TBAI_aov <- aov(TBAI ~ TRT, data = TBAI_tbl)
+summary(TBAI_aov)
+```
+
+```{r}
+ggplot() + 
+  geom_boxplot(data = TBAI_tbl, 
+               aes(x = factor(Treatment, c("Burn Only",  "Mastication + Burn", "Mastication + Herbicide", "Mastication Only")), 
+                   y = TBAI)) + 
+  geom_point(data = TBAI_means, 
+             aes(x = Treatment, y = mean), color = 'red') + 
+  labs(x = "Treatment", 
+       y = "TBAI (%/yr)")
+```
+
+```{r}
+n.sim  <- 1000                 ## number of simulations
+mu     <- TBAI_means$mean ## group means
+serr <- ANOVAreplication::pooled.sd(TBAI_tbl[,3:2]) ## error variance
+sampsizes <- list(c(3,4,3,4), c(3,4,3,4)*2, c(3,4,3,4)*3, c(3,4,3,4)*4, 
+                  c(3,4,3,4)*5, c(3,4,3,4)*6, c(3,4,3,4)*7, c(3,4,3,4)*8) ## number of observations per group
+group <- TBAI_means$TRT
+Tpowers <- numeric()
+
+results <- numeric(n.sim) ## vector to store results in
+for (j in 1:length(sampsizes)) {
+  sampsi <- sampsizes[[j]]
+  sig.exps <- numeric(n.sim)
+  
+  for(i in 1:n.sim){
+  ## Simulate new response, build data set
+  y <- rnorm(sum(sampsi), mean = rep(mu, times = sampsi), sd = serr)
+  data <- data.frame(y = y, group = rep(seq_along(group), times = sampsi))
+ 
+  ## Fit one-way ANOVA model
+  fit  <- aov(y ~ group, data = data)
+  
+  ## Extract result of global F-test
+  sig.exps[i] <- summary(fit)[[1]][1, "Pr(>F)"] <= 0.05 ## 1 = reject
+  }
+  Tpowers[j] <- mean(sig.exps)
+}
+
+```
+
+```{r}
+n.sim  <- 1000                 ## number of simulations
+mu     <- SBAI_means$mean ## group means
+serr <- ANOVAreplication::pooled.sd(data.frame(y=SBAI_tbl$SBAI, g=SBAI_tbl$TRT)) ## error variance
+sampsizes <- list(c(3,4,3,4), c(3,4,3,4)*2, c(3,4,3,4)*3, c(3,4,3,4)*4, 
+                  c(3,4,3,4)*5, c(3,4,3,4)*6, c(3,4,3,4)*7, c(3,4,3,4)*8) ## number of observations per group
+group <- SBAI_means$TRT
+Spowers <- numeric()
+
+results <- numeric(n.sim) ## vector to store results in
+for (j in 1:length(sampsizes)) {
+  sampsi <- sampsizes[[j]]
+  sig.exps <- numeric(n.sim)
+  
+  for(i in 1:n.sim){
+  ## Simulate new response, build data set
+  y <- rnorm(sum(sampsi), mean = rep(mu, times = sampsi), sd = serr)
+  data <- data.frame(y = y, group = rep(seq_along(group), times = sampsi))
+ 
+  ## Fit one-way ANOVA model
+  fit  <- aov(y ~ group, data = data)
+  
+  ## Extract result of global F-test
+  sig.exps[i] <- summary(fit)[[1]][1, "Pr(>F)"] <= 0.05 ## 1 = reject
+  }
+  Spowers[j] <- mean(sig.exps)
+}
+
+```
+
+```{r}
+powers <- data.frame(n = c(4, 8, 12, 16, 20, 24, 28, 32, 4, 8, 12, 16, 20, 24, 28, 32), 
+                     power = c(Tpowers, Spowers),
+                     group = c(rep('TBAI', 8), rep('SBAI', 8)))
+
+ggplot(data = powers) + 
+  geom_line(aes(x = n, y = power, group = group, color = group)) + 
+  geom_hline(aes(yintercept = 0.8), col = 'black', linetype = 2) + 
+  labs(x = 'Sample size', 
+       y = 'Power (probability of statistical significance)', 
+       color = 'Growth metric') + 
+  scale_x_continuous(breaks = seq(0, 35, by = 10)) + 
+  scale_y_continuous(breaks = seq(0, 1, by = 0.2), limits = c(0,1))
+```
+
+
+
+

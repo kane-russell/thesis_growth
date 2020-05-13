@@ -22,10 +22,12 @@ growth <-
   read.csv("TAYSR_CompiledGrowthData_2013_2018.csv")
 colnames(growth)[colnames(growth)=="TREATMENT"] <- "TRT"
 colnames(growth)[colnames(growth)=="SPECIES"] <- "SPP"
+
 growth_out <- growth[-c(153),]
+
 fgrow <- 
   growth_out %>% 
-  filter(SPP %in% c("DF", "IC", "PP", "SP", "WF"))
+  filter(SPP %in% c("DF", "IC", "PP", "SP", "WF", "GS"))
 
 treatments <- data.frame(TRT = c("M", "MH", "MBB", "BB"), 
                          Treatment = c("Mastication Only", "Mastication + Herbicide", "Mastication + Burn", "Burn Only" ))
@@ -38,13 +40,23 @@ BAI_gap <-
   arrange(factor(TRT, levels = c("M", "MH", "MBB", "BB"))) %>% 
   left_join(treatments) %>% 
   select(TRT, Treatment, COMPGAP, BAI, COMP)
-BAI_gap
+BAI_gap$COMPGAP <- factor(BAI_gap$COMPGAP)
+BAI_gap$COMP <- factor(BAI_gap$COMP)
+
+growth_metrics <- 
+  read_csv("growth_metrics.csv") %>% 
+  mutate(COMPGAP = paste0(COMP, GAP)) %>% 
+  left_join(treatments)
+
+growth_metrics
+
+
 ```
 
 ## ANOVA
 
 ```{r}
-BAI_aov <- aov(BAI ~ TRT*COMP, data = BAI_gap)
+BAI_aov <- aov(SBAI ~ TRT, data = growth_metrics)
 sum_BAI_aov <- summary(BAI_aov)
 sum_BAI_aov
 ```
@@ -53,9 +65,9 @@ sum_BAI_aov
 ## Tukey's HSD
 
 ```{r}
-Tuk_BAI <- TukeyHSD(BAI_aov)
-Tuk_BAI
-plot(Tuk_BAI)
+#Tuk_BAI <- TukeyHSD(BAI_aov)
+#Tuk_BAI
+#plot(Tuk_BAI)
 ```
 
 
@@ -64,17 +76,16 @@ plot(Tuk_BAI)
 
 ```{r}
  ggplot() + 
-  geom_boxplot(data = BAI_gap, 
+  geom_boxplot(data = SBAI_tbl, 
                aes(x = factor(Treatment, c("Burn Only", "Mastication + Burn",  "Mastication + Herbicide", "Mastication Only")), 
-                   y = BAI)) + 
+                   y = SBAI)) + 
   labs(x = "Treatment", 
-       y = "Basal area increment (ft2/ac*year)", 
-       title = "Stand-level growth response by treatment")
+       y = expression(SBAI~(m^{2}~ha^{-1}~yr^{-1})))
 ```
 
 ```{r}
 RBAI_gap <- 
-  growth_out %>% 
+  fgrow %>% 
   left_join(treatments) %>% 
   mutate(RBAI = (BA_2018 - BA_2013)/(5*BA_2013)) %>% 
   group_by(TRT, Treatment, COMPGAP, COMP) %>% 
@@ -84,10 +95,17 @@ RBAI_gap
 ```
 
 ```{r}
-RBAI_aov <- aov(avg_RBAI ~ TRT*COMP, data = RBAI_gap)
-sum_RBAI_aov <- summary(RBAI_aov)
-sum_RBAI_aov
+TBAI_aov <- aov(TBAI ~ TRT, data = growth_metrics)
+sum_TBAI_aov <- summary(RBAI_aov)
+sum_TBAI_aov
 ```
+
+```{r}
+Tuk_TBAI <- TukeyHSD(TBAI_aov)
+Tuk_TBAI
+plot(Tuk_TBAI)
+```
+
 
 ```{r}
 ggplot() + 
@@ -95,9 +113,22 @@ ggplot() +
                aes(x = factor(Treatment, c("Burn Only",  "Mastication + Burn", "Mastication + Herbicide", "Mastication Only")), 
                    y = avg_RBAI)) + 
   labs(x = "Treatment", 
-       y = "Relative basal area increment (%/year)", 
-       title = "Tree-level growth response by treatment")
+       y = "TBAI (%/yr)")
 ```
+
+```{r}
+BAI_gap %>% 
+  group_by(TRT) %>% 
+  summarise(mean_BAI = mean(BAI))
+```
+
+
+```{r}
+RBAI_gap %>% 
+  group_by(TRT) %>% 
+  summarise(mean_RBAI = mean(avg_RBAI))
+```
+
 
 
 ```{r}
@@ -169,5 +200,14 @@ GS_comp %>%
              shape = 15, 
              size = 3)
 ```
+
+
+```{r}
+library(lme4)
+bai.lmer <- lmer(BAI ~ TRT + (1|COMPGAP), 
+                 data = BAI_gap)
+summary(bai.lmer)
+```
+
 
 
