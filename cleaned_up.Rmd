@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ANOVAreplication)
 library(car)
+library(sjstats)
+library(pwr)
 ```
 
 
@@ -189,7 +191,7 @@ for (j in 1:length(sampsizes)) {
 ```
 
 ```{r}
-powers <- data.frame(n = c(4, 8, 12, 16, 20, 24, 28, 32, 4, 8, 12, 16, 20, 24, 28, 32), 
+powers <- data.frame(n = rep(seq(14, 112, by = 14), times = 2), 
                      power = c(Tpowers, Spowers),
                      group = c(rep('TBAI', 8), rep('SBAI', 8)))
 
@@ -199,10 +201,31 @@ ggplot(data = powers) +
   labs(x = 'Sample size', 
        y = 'Power (probability of statistical significance)', 
        color = 'Growth metric') + 
-  scale_x_continuous(breaks = seq(0, 35, by = 10)) + 
+  scale_x_continuous(breaks = seq(0, 120, by = 20)) + 
   scale_y_continuous(breaks = seq(0, 1, by = 0.2), limits = c(0,1))
 ```
 
+```{r}
+anova_stats(SBAI_aov)
+anova_stats(TBAI_aov)
+```
 
+```{r}
+SBAI_om <- omega_sq(SBAI_aov, ci.lvl = 0.95)
+
+TBAI_om <- omega_sq(TBAI_aov, ci.lvl = 0.95)
+
+CIs <- data.frame(metric = c('SBAI', 'TBAI'), 
+                  omegasq = c(SBAI_om[[2]], TBAI_om[[2]]), 
+                  low = c(SBAI_om[[3]], TBAI_om[[3]]), 
+                  high = c(SBAI_om[[4]], TBAI_om[[4]]))
+
+ggplot(CIs) + 
+  geom_point(aes(x = metric, y = omegasq)) + 
+  geom_errorbar(aes(x = metric, ymin = low, ymax = high), width = 0.1) + 
+  ylim(-1,1) + 
+  labs(x = 'Growth metric', 
+       y = 'Omega squared')
+```
 
 
