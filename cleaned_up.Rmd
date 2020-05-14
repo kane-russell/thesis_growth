@@ -37,8 +37,6 @@ TBAI_tbl <- cleaned_trees %>%
   summarise(TBAI = mean(RBAI)) %>% 
   left_join(treatments)
   
-TBAI_tbl
-
 plot_size <- read_csv("plot_size.csv")
 
 SBAI_tbl <- cleaned_trees %>% 
@@ -50,6 +48,14 @@ SBAI_tbl <- cleaned_trees %>%
          SBAI = SBAI_imp/4.356) %>% 
   select(COMPGAP, TRT, SBAI_imp, SBAI) %>% 
   left_join(treatments)
+
+TBAI_tbl$TRT <- factor(TBAI_tbl$TRT, levels = c('M', 'BB', 'MBB', 'MH'))
+SBAI_tbl$TRT <- factor(SBAI_tbl$TRT, levels = c('M', 'BB', 'MBB', 'MH'))
+
+TBAI_tbl$Treatment <- factor(TBAI_tbl$Treatment, levels = c('Mastication Only', 'Burn Only', 'Mastication + Burn', 'Mastication + Herbicide'))
+SBAI_tbl$Treatment <- factor(SBAI_tbl$Treatment, levels = c('Mastication Only', 'Burn Only', 'Mastication + Burn', 'Mastication + Herbicide'))
+
+TBAI_tbl
 SBAI_tbl
 ```
 
@@ -80,8 +86,6 @@ TBAI_means
 ```
 
 ```{r}
-TBAI_tbl$TRT <- factor(TBAI_tbl$TRT, levels = c('M', 'BB', 'MBB', 'MH'))
-SBAI_tbl$TRT <- factor(SBAI_tbl$TRT, levels = c('M', 'BB', 'MBB', 'MH'))
 TBAI_lm <- lm(TBAI ~ TRT, data = TBAI_tbl)
 SBAI_lm <- lm(SBAI ~ TRT, data = SBAI_tbl)
 
@@ -107,12 +111,13 @@ summary(SBAI_aov)
 ```{r}
 ggplot() + 
   geom_boxplot(data = SBAI_tbl, 
-               aes(x = factor(Treatment, c("Burn Only", "Mastication + Burn",  "Mastication + Herbicide", "Mastication Only")), 
+               aes(x = Treatment, 
                    y = SBAI)) + 
   geom_point(data = SBAI_means, 
              aes(x = Treatment, y = mean), color = 'red') + 
   labs(x = "Treatment", 
-       y = expression(SBAI~(m^{2}~ha^{-1}~yr^{-1})))
+       y = expression(SBAI~(m^{2}~ha^{-1}~yr^{-1})), 
+       tag = 'C')
 ```
 
 
@@ -124,12 +129,13 @@ summary(TBAI_aov)
 ```{r}
 ggplot() + 
   geom_boxplot(data = TBAI_tbl, 
-               aes(x = factor(Treatment, c("Burn Only",  "Mastication + Burn", "Mastication + Herbicide", "Mastication Only")), 
+               aes(x = Treatment, 
                    y = TBAI)) + 
   geom_point(data = TBAI_means, 
              aes(x = Treatment, y = mean), color = 'red') + 
   labs(x = "Treatment", 
-       y = "TBAI (%/yr)")
+       y = expression(TBAI~('%'~yr^{-1})), 
+       tag = 'A')
 ```
 
 ```{r}
@@ -212,28 +218,12 @@ anova_stats(SBAI_aov)
 anova_stats(TBAI_aov)
 ```
 
-```{r}
-SBAI_om <- omega_sq(SBAI_aov, ci.lvl = 0.95)
 
-TBAI_om <- omega_sq(TBAI_aov, ci.lvl = 0.95)
-
-CIs <- data.frame(metric = c('SBAI', 'TBAI'), 
-                  omegasq = c(SBAI_om[[2]], TBAI_om[[2]]), 
-                  low = c(SBAI_om[[3]], TBAI_om[[3]]), 
-                  high = c(SBAI_om[[4]], TBAI_om[[4]]))
-
-ggplot(CIs) + 
-  geom_point(aes(x = metric, y = omegasq)) + 
-  geom_errorbar(aes(x = metric, ymin = low, ymax = high), width = 0.1) + 
-  ylim(-1,1) + 
-  labs(x = 'Growth metric', 
-       y = 'Omega squared')
-```
 
 ```{r}
 TBAI_bounds <- TukeyHSD(TBAI_aov)
 
-TBAI_CI <- data.frame(TRT = c('Burn only', 'Mastication + Burn', 'Mastication + herbicide'), 
+TBAI_CI <- data.frame(TRT = c('M - B', 'M - M+B', 'M - M+H'), 
                       diff = TBAI_bounds$TRT[1:3,1], 
                       low = TBAI_bounds$TRT[1:3,2], 
                       high = TBAI_bounds$TRT[1:3,3])
@@ -243,13 +233,14 @@ ggplot(TBAI_CI) +
   geom_errorbar(aes(x = TRT, ymin = low, ymax = high), width = 0.1) + 
   geom_hline(aes(yintercept = -0.2*TBAI_means$mean[2]), lty = 2, col = 'red') + 
   labs(x = 'Treatment', 
-       y = 'Effect size (raw mean difference)')
+       y = expression(TBAI~effect~size~('%'~yr^{-1})), 
+       tag = 'B')
 ```
 
 ```{r}
 SBAI_bounds <- TukeyHSD(SBAI_aov)
 
-SBAI_CI <- data.frame(TRT = c('Burn only', 'Mastication + Burn', 'Mastication + herbicide'), 
+SBAI_CI <- data.frame(TRT = c('M - B', 'M - M+B', 'M - M+H'), 
                       diff = SBAI_bounds$TRT[1:3,1], 
                       low = SBAI_bounds$TRT[1:3,2], 
                       high = SBAI_bounds$TRT[1:3,3])
@@ -259,7 +250,8 @@ ggplot(SBAI_CI) +
   geom_errorbar(aes(x = TRT, ymin = low, ymax = high), width = 0.1) + 
   geom_hline(aes(yintercept = -0.2*SBAI_means$mean[2]), lty = 2, col = 'red') + 
   labs(x= 'Treatment', 
-       y = 'Effect size (raw mean difference)')
+       y = expression(SBAI~effect~size~(m^{2}~ha^{-1}~yr^{-1})), 
+       tag = 'D')
 ```
 
 ```{r}
